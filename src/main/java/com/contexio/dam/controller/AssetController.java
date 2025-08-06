@@ -35,7 +35,7 @@ import jakarta.servlet.http.HttpServletRequest;
 @RestController
 @RequestMapping("/")
 public class AssetController {
-
+// Added a new feature to test release drafter
 	private static final Logger logger = LoggerFactory.getLogger(AssetController.class);
 
 	@Value("${file.upload.path}")

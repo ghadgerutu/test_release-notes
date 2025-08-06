@@ -1,0 +1,45 @@
+name: AI Code Diff Summary
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  analyze-diff:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Needed to access full git history
+
+      - name: Generate Git Diff
+        run: |
+          git fetch origin ${{ github.event.pull_request.base.ref }}
+          git diff origin/${{ github.event.pull_request.base.ref }}...HEAD > diff.txt
+          head -n 100 diff.txt > diff_limited.txt
+
+      - name: AI Summary using OpenAI API
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          prompt="Summarize this code diff in simple English:\n\n$(cat diff_limited.txt)"
+
+          response=$(curl https://api.openai.com/v1/chat/completions \
+            -s \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer $OPENAI_API_KEY" \
+            -d '{
+              "model": "gpt-4",
+              "messages": [{"role": "user", "content": "'"${prompt//\"/\\\"}"'"}],
+              "temperature": 0.3
+            }' | jq -r '.choices[0].message.content')
+
+          echo "$response" > ai_summary.txt
+
+      - name: Upload Summary as Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: AI-Code-Diff-Summary
+          path: ai_summary.txt
