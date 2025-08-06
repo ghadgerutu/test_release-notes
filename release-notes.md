@@ -1,8 +1,8 @@
-Platform X – Editorial Tool Release
+Platform X ï¿½ Editorial Tool Release
 
-Release Date: 04 August 2025
+Release Date: 05 August 2025
 Release Notes Version: 1
-Release Notes Date: 04 August 2025
+Release Notes Date: 05 August 2025
 
 Overview
 
@@ -10,10 +10,13 @@ This release includes the following code-level changes since the last release.
 
 New Features & Enhancements
 
-1. chore: add automated release notes setup with release-drafter
-2. upload folder
-3. new files added1
-4. new files added
+1. feat: improve feature X with new enhancements
+2. feat: added dummy feature for release drafter test
+3. feat(test): trying release drafter
+4. chore: add automated release notes setup with release-drafter
+5. upload folder
+6. new files added1
+7. new files added
 
 User Impact
 
@@ -22,4 +25,4 @@ User Impact
 
 Support
 
-For any queries, contact: aadesh.dudhane@contexio.co.in
+For any queries, contact: 
