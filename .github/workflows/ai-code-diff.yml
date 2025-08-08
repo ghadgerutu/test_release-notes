@@ -12,25 +12,45 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0
+          fetch-depth: 0  # Full git history needed for diff
+
+      - name: Show Pull Request Info (debug)
+        run: |
+          echo "PR Base branch (parent): ${{ github.event.pull_request.base.ref }}"
+          echo "PR Head branch (child): ${{ github.event.pull_request.head.ref }}"
+          echo "PR Number: ${{ github.event.number }}"
+          echo "Repository: ${{ github.repository }}"
+
+      - name: Fetch parent branch for diff
+        run: |
+          git fetch origin ${{ github.event.pull_request.base.ref }}
 
       - name: Generate Git Diff
         run: |
-          git fetch origin ${{ github.event.pull_request.base.ref }}
+          echo "Generating git diff between origin/${{ github.event.pull_request.base.ref }} and HEAD"
           git diff origin/${{ github.event.pull_request.base.ref }}...HEAD > diff.txt
           head -n 100 diff.txt > diff_limited.txt
+          echo "Diff files created."
 
       - name: Show Full Diff (for debugging)
-        run: cat diff.txt
+        run: |
+          echo "----- Full diff.txt contents -----"
+          cat diff.txt
+          echo "---------------------------------"
 
-      - name: Show Limited Diff (for debugging)
-        run: cat diff_limited.txt
+      - name: Show Limited Diff (first 100 lines)
+        run: |
+          echo "----- Limited diff_limited.txt contents -----"
+          cat diff_limited.txt
+          echo "---------------------------------------------"
 
       - name: AI Summary using OpenAI API
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           prompt="Summarize this code diff in simple English:\n\n$(cat diff_limited.txt)"
+          echo "Prompt sent to OpenAI API:"
+          echo "$prompt"
 
           response=$(curl https://api.openai.com/v1/chat/completions \
             -s \
@@ -41,6 +61,9 @@ jobs:
               "messages": [{"role": "user", "content": "'"${prompt//\"/\\\"}"'"}],
               "temperature": 0.3
             }' | jq -r '.choices[0].message.content')
+
+          echo "Response received from OpenAI API:"
+          echo "$response"
 
           echo "$response" > ai_summary.txt
 
