@@ -72,7 +72,7 @@ jobs:
               "temperature": 0.3
             }')
 
-          echo "Raw API response:"
+          echo "Raw API response: $curl_response"
           echo "$curl_response" > raw_response.json
 
           # Extract the summary text from the JSON response
