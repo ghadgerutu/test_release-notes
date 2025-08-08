@@ -63,7 +63,7 @@ jobs:
 
           # Build valid JSON payload
           payload=$(jq -nc --arg prompt "$prompt" \
-            '{model:"gpt-4", messages:[{role:"user", content:$prompt}], temperature:0.3}')
+            '{model:"gpt-3.5-turbo", messages:[{role:"user", content:$prompt}], temperature:0.3}')
 
           # Call API
           curl_response=$(curl -s \
