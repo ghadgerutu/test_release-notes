@@ -12,13 +12,19 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0  # Needed to access full git history
+          fetch-depth: 0
 
       - name: Generate Git Diff
         run: |
           git fetch origin ${{ github.event.pull_request.base.ref }}
           git diff origin/${{ github.event.pull_request.base.ref }}...HEAD > diff.txt
           head -n 100 diff.txt > diff_limited.txt
+
+      - name: Show Full Diff (for debugging)
+        run: cat diff.txt
+
+      - name: Show Limited Diff (for debugging)
+        run: cat diff_limited.txt
 
       - name: AI Summary using OpenAI API
         env:
