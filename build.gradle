@@ -1,0 +1,127 @@
+import org.ajoberstar.grgit.Grgit
+import java.text.SimpleDateFormat
+import org.apache.poi.xwpf.usermodel.*
+
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '3.4.3'
+	id 'io.spring.dependency-management' version '1.1.7'
+    id 'org.ajoberstar.grgit' version '5.2.0'
+}
+
+group = 'contexio'
+version = '0.0.1-SNAPSHOT'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(21)
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	implementation 'org.imgscalr:imgscalr-lib:4.2'
+	implementation 'mysql:mysql-connector-java:8.0.33'  // Add this line
+    implementation group: 'com.jolbox', name: 'bonecp', version: '0.8.0.RELEASE'
+   implementation 'org.javatuples:javatuples:1.2'
+    implementation 'org.springframework.boot:spring-boot-starter'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+ 
+    // AWS SDK
+    implementation platform('com.amazonaws:aws-java-sdk-bom:1.11.1000')
+    implementation 'com.amazonaws:aws-java-sdk-s3'
+ 
+    // PDF manipulation libraries
+    implementation 'org.apache.pdfbox:pdfbox-tools:2.0.22'
+    implementation 'org.apache.pdfbox:fontbox:2.0.22'
+    implementation 'org.apache.pdfbox:jempbox:1.8.16'
+    implementation 'org.apache.pdfbox:xmpbox:2.0.22'
+    implementation 'org.apache.pdfbox:preflight:2.0.22'
+    implementation 'net.sf.cssbox:pdf2dom:1.9'
+    implementation 'org.apache.poi:poi-ooxml:5.2.3'
+
+
+ 
+    // JSON processing
+    implementation 'org.json:json:20190722'
+ 
+    // Database connectivity
+    implementation 'org.springframework.boot:spring-boot-starter-jdbc'
+	
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
+
+
+
+
+
+tasks.register('generateChangelogDetailed') {
+    doLast {
+        try {
+            def grgit = Grgit.open(dir: rootDir)
+
+            def parentBranch = 'Test_Release_Notes'
+            def childBranch = 'Test_Release_Notes_compare'
+
+            // Get commits reachable from childBranch but not parentBranch
+            def commits = grgit.log {
+                range "${parentBranch}..${childBranch}"
+            }
+
+            def diffs = grgit.diff {
+                oldRevision = parentBranch
+                newRevision = childBranch
+            }
+
+            def today = new Date()
+            def sdf = new SimpleDateFormat("dd MMMM yyyy")
+            def releaseDate = sdf.format(today)
+
+            def changelog = new StringBuilder()
+
+            changelog << "Platform X – Editorial Tool Release\n\n"
+            changelog << "Release Date: ${releaseDate}\n"
+            changelog << "Release Notes Version: 1\n"
+            changelog << "Release Notes Date: ${releaseDate}\n\n"
+            changelog << "Overview\n\n"
+            changelog << "Changes between branches `${parentBranch}` and `${childBranch}`\n\n"
+
+            changelog << "Commits:\n"
+            int i = 1
+            commits.each { commit ->
+                def msg = commit.shortMessage.replaceAll(/\[.*?\]/, '').trim()
+                changelog << "${i}. ${msg}\n"
+                i++
+            }
+
+            changelog << "\nChanged files:\n"
+            diffs.each { diffEntry ->
+                def path = diffEntry.oldPath ?: diffEntry.newPath
+                changelog << "- ${path}\n"
+            }
+
+            changelog << "\nUser Impact\n\n"
+            changelog << "- Developers and stakeholders can track recent improvements.\n"
+            changelog << "- Each change enhances content workflow and compliance.\n\n"
+            changelog << "Support\n\n"
+            changelog << "For any queries, contact: your-support@yourcompany.com\n"
+
+            def file = new File("${rootDir}/release-notes.md")
+            file.text = changelog.toString()
+
+            println " Detailed release notes generated at: ${file.absolutePath}"
+        } catch (Exception e) {
+            logger.error(" Failed to generate detailed changelog", e)
+        }
+    }
+}
