@@ -25,6 +25,11 @@ jobs:
         run: |
           git fetch origin ${{ github.event.pull_request.base.ref }}
 
+      - name: Show changed files in diff (debug)
+        run: |
+          echo "Files changed in this PR diff:"
+          git diff --name-only origin/${{ github.event.pull_request.base.ref }}...HEAD
+
       - name: Generate Git Diff
         run: |
           echo "Generating git diff between origin/${{ github.event.pull_request.base.ref }} and HEAD"
@@ -48,11 +53,16 @@ jobs:
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
-          prompt="Summarize this code diff in simple English:\n\n$(cat diff_limited.txt)"
+          # Use actual newlines in prompt (not literal \n)
+          prompt="Summarize this code diff in simple English:
+
+          $(cat diff_limited.txt)"
+
           echo "Prompt sent to OpenAI API:"
           echo "$prompt"
 
-          response=$(curl https://api.openai.com/v1/chat/completions \
+          # Call OpenAI API and save full raw response to raw_response.json (debug)
+          curl_response=$(curl https://api.openai.com/v1/chat/completions \
             -s \
             -H "Content-Type: application/json" \
             -H "Authorization: Bearer $OPENAI_API_KEY" \
@@ -60,15 +70,24 @@ jobs:
               "model": "gpt-4",
               "messages": [{"role": "user", "content": "'"${prompt//\"/\\\"}"'"}],
               "temperature": 0.3
-            }' | jq -r '.choices[0].message.content')
+            }')
+
+          echo "Raw API response:"
+          echo "$curl_response" > raw_response.json
+
+          # Extract the summary text from the JSON response
+          response=$(echo "$curl_response" | jq -r '.choices[0].message.content')
 
           echo "Response received from OpenAI API:"
           echo "$response"
 
+          # Save summary to file for artifact upload
           echo "$response" > ai_summary.txt
 
       - name: Upload Summary as Artifact
         uses: actions/upload-artifact@v4
         with:
           name: AI-Code-Diff-Summary
-          path: ai_summary.txt
+          path: |
+            - ai_summary.txt
+            - raw_response.json
